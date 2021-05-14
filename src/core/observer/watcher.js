@@ -44,8 +44,8 @@ export default class Watcher {
 
   constructor (
     vm: Component,
-    expOrFn: string | Function,
-    cb: Function,
+    expOrFn: string | Function, // 要观察的表达式
+    cb: Function, // 当观察的表达式值变化时候执行的回调
     options?: ?Object,
     isRenderWatcher?: boolean
   ) {
@@ -77,6 +77,7 @@ export default class Watcher {
       : ''
     // parse expression for getter
     if (typeof expOrFn === 'function') {
+      // 对于初始化用来渲染视图的watcher来说，expOrFn就是render方法
       this.getter = expOrFn
     } else {
       this.getter = parsePath(expOrFn)
@@ -90,6 +91,7 @@ export default class Watcher {
         )
       }
     }
+    // 调用get方法，lazy表示的是当前watcher是computed
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -99,10 +101,12 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
+    // dpe.target 赋值
     pushTarget(this)
     let value
     const vm = this.vm
     try {
+      // 触发getter，自己将被添加到dep的subs里面，从vm内部获取attr.value，从而触发对应data的get方法
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -116,6 +120,7 @@ export default class Watcher {
       if (this.deep) {
         traverse(value)
       }
+      // 清除dep.target
       popTarget()
       this.cleanupDeps()
     }
@@ -190,6 +195,7 @@ export default class Watcher {
         // set new value
         const oldValue = this.value
         this.value = value
+        // 触发在compile中绑定的回调，修改页面的值
         if (this.user) {
           try {
             this.cb.call(this.vm, value, oldValue)
